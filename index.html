@@ -267,7 +267,7 @@ const TEAM_STYLE = {
 };
 
 // ── Real data from CSV · Epics excluded · Out_Of_Vtex_Scope label → Out of Scope ─
-// Format per team: [ReadyForQA, InProgress, Blocked, OutOfScope, Done]
+// Format per team: [ReadyForQA, Backlog, Blocked, OutOfScope, Done]
 const DATA = [
   { name: 'Public Marketplace', teams: {
     VTEX:       [  0,   1,  0,   0,  32],
@@ -277,15 +277,15 @@ const DATA = [
     Unassigned: [  0,   1,  0,   0,   1],
   }},
   { name: 'Private Marketplace', teams: {
-    VTEX:       [  8,   9,  0,   0,  88],
+    VTEX:       [  9,   8,  0,   0,  88],
     ODP:        [ 14,   7,  0,   0,  44],
     Ollie:      [  0,   0,  1,   0,   6],
     Kibo:       [  0,   0,  1,   0,   0],
-    Trika:      [  1,   1,  0,   0,   0],
+    Trika:      [  2,   0,  0,   0,   0],
     Unassigned: [  8,   2,  0,  16,   3],
   }},
   { name: 'Hosted Catalog', teams: {
-    VTEX:       [ 17,  48,  0,   0,  17],
+    VTEX:       [ 21,  44,  0,   0,  17],
     ODP:        [ 17,  32,  5,   0,   8],
     Brightdome: [  1,  13,  4,   0,   1],
     Ollie:      [  7,  50,  3,   0,   3],
@@ -293,18 +293,18 @@ const DATA = [
     Unassigned: [  0,  53,  0,   0,   3],
   }},
   { name: 'Punchout', teams: {
-    VTEX:       [  5,  65, 17,   2,  55],
-    ODP:        [  5,  26,  5,   0,  14],
-    Brightdome: [  3, 122, 28,   1, 149],
-    Ollie:      [  1,  32,  0,   0,   2],
+    VTEX:       [ 32,  38, 17,   2,  55],
+    ODP:        [  7,  24,  5,   0,  14],
+    Brightdome: [ 85,  40, 28,   1, 149],
+    Ollie:      [ 11,  22,  0,   0,   2],
     Unassigned: [  0,  25,  3,  27,   5],
   }},
   { name: 'B2B Website', teams: {
-    VTEX:       [ 15, 118, 28,   3,  33],
-    ODP:        [  1,  22, 12,   0,   6],
-    Brightdome: [  1, 185, 39,  10,  57],
-    Ollie:      [  0,  60,  0,   0,   1],
-    Unassigned: [  0, 115, 31,  66,   7],
+    VTEX:       [ 58,  75, 28,   3,  33],
+    ODP:        [  4,  19, 12,   0,   6],
+    Brightdome: [109,  77, 39,  10,  57],
+    Ollie:      [  7,  53,  0,   0,   1],
+    Unassigned: [ 18,  97, 31,  66,   7],
   }},
   { name: 'Customer Service App', teams: {
     VTEX:       [  5,  62,  1,   0,  62],
