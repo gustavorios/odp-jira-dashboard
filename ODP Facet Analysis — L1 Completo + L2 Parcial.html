@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ODP Facet Analysis — L1 Completo + L2 Parcial</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f4f3ef;--surface:#fff;--border:#dedad2;--text:#1a1916;--muted:#7a7870;--faint:#e8e5de;
+  --patA:#1d6bbf;--patA-bg:#e5f0fb;
+  --patB:#2A7D3F;--patB-bg:#e4f4e8;
+  --patC:#c47d10;--patC-bg:#fdf3e0;
+  --patD:#9f7aea;--patD-bg:#f0ecfe;
+  --done:#22543d;--done-bg:#c6f6d5;
+  --pend:#744210;--pend-bg:#fefcbf;
+}
+body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--text);padding:2rem 2.5rem;line-height:1.5}
+h1{font-size:16px;font-weight:600;letter-spacing:-.02em;margin-bottom:4px}
+.sub{font-size:12px;color:var(--muted);font-family:'IBM Plex Mono',monospace;margin-bottom:1.5rem}
+
+/* TABS */
+.tabs{display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:2rem;flex-wrap:wrap}
+.tab{padding:8px 20px;font-size:13px;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-2px;white-space:nowrap;transition:.15s}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--text);border-bottom-color:var(--text);font-weight:600}
+.panel{display:none}.panel.active{display:block}
+
+/* PATTERN BADGES */
+.pat{display:inline-block;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:.03em;white-space:nowrap}
+.pat-A{background:var(--patA-bg);color:var(--patA)}
+.pat-B{background:var(--patB-bg);color:var(--patB)}
+.pat-C{background:var(--patC-bg);color:var(--patC)}
+.pat-D{background:var(--patD-bg);color:var(--patD)}
+.stat-done{background:var(--done-bg);color:var(--done);padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600}
+.stat-pend{background:var(--pend-bg);color:var(--pend);padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600}
+
+/* FACET CHAIN */
+.chain{display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin:6px 0}
+.fc{padding:3px 10px;border-radius:5px;font-size:11.5px;border:1px solid;white-space:nowrap}
+.fc-std{background:#f0f4ff;color:#1d6bbf;border-color:#bee3f8}
+.fc-spec{background:#f0fff4;color:#276749;border-color:#9ae6b4}
+.fc-uniq{background:#fff5f7;color:#c53030;border-color:#fed7d7;font-weight:600}
+.fc-ssn{background:#fffaf0;color:#c05621;border-color:#fbd38d}
+.arr{color:#a0aec0;font-size:11px;margin:0 1px}
+
+/* CARDS */
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px;margin-top:1.5rem}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px}
+.card-header{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.card-name{font-size:13px;font-weight:600;flex:1}
+.card-ncode{font-size:11px;color:var(--muted);font-family:'IBM Plex Mono',monospace}
+.card-section{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:10px 0 4px}
+.fi-list{display:flex;flex-wrap:wrap;gap:3px}
+.fi-tag{padding:2px 7px;border-radius:4px;font-size:11px;background:#edf2f7;color:#4a5568;border:1px solid #e2e8f0}
+.fi-miss{padding:2px 7px;border-radius:4px;font-size:11px;background:#fff5f7;color:#c53030;border:1px solid #fed7d7;text-decoration:line-through}
+.avail-tag{padding:2px 7px;border-radius:4px;font-size:11px;border:1px solid}
+.avail-3{background:#ebf8ff;color:#2b6cb0;border-color:#bee3f8}
+.avail-2{background:#fffaf0;color:#c05621;border-color:#fbd38d}
+.uniq-list{margin-top:6px}
+.uniq-item{font-size:12px;color:#c53030;margin-bottom:2px}
+.uniq-item::before{content:'★ ';font-size:10px}
+.note{font-size:11px;color:var(--muted);font-style:italic;margin-top:6px;border-top:1px dashed var(--border);padding-top:6px}
+
+/* TABLE */
+.tbl-wrap{overflow-x:auto;margin-top:1.5rem}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+thead th{background:var(--faint);padding:9px 12px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);border-bottom:2px solid var(--border);white-space:nowrap}
+tbody tr{border-bottom:1px solid var(--faint)}
+tbody tr:hover{background:#fafaf8}
+tbody td{padding:9px 12px;vertical-align:middle}
+td.dept{font-weight:600;white-space:nowrap}
+td.ncode{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted)}
+
+/* LEGEND */
+.legend{display:flex;flex-wrap:wrap;gap:14px;padding:14px 16px;background:var(--faint);border-radius:8px;margin-bottom:1.75rem;font-size:12px}
+.leg-item{display:flex;align-items:center;gap:6px}
+
+/* SECTION */
+.section{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin:2rem 0 .75rem;padding-bottom:6px;border-bottom:1px solid var(--border)}
+
+/* PROGRESS BAR */
+.progress-bar{background:var(--faint);border-radius:6px;height:8px;margin:4px 0}
+.progress-fill{height:100%;border-radius:6px;background:var(--patA)}
+
+/* SUMMARY BOX */
+.summary-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:2rem}
+.sbox{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 14px;text-align:center}
+.sbox-val{font-size:28px;font-weight:600;font-family:'IBM Plex Mono',monospace;line-height:1}
+.sbox-lbl{font-size:11px;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:.05em}
+</style>
+</head>
+<body>
+
+<h1>ODP Business — Facet Analysis</h1>
+<div class="sub">Resultado parcial · L1 completo (14 depts) · L2 parcial (8/162) · Abril 2026</div>
+
+<!-- TABS -->
+<div class="tabs" id="tabs">
+  <div class="tab active" onclick="switchTab('overview')">Visão Geral</div>
+  <div class="tab" onclick="switchTab('l1')">L1 — Todos os Depts</div>
+  <div class="tab" onclick="switchTab('l2-os')">L2 — Office Supplies</div>
+  <div class="tab" onclick="switchTab('facet-inventory')">Inventário de Facets</div>
+  <div class="tab" onclick="switchTab('pending')">Pendentes</div>
+</div>
+
+<!-- ═══ OVERVIEW ═══ -->
+<div class="panel active" id="panel-overview">
+
+  <div class="summary-grid">
+    <div class="sbox"><div class="sbox-val">14</div><div class="sbox-lbl">L1 mapeados</div></div>
+    <div class="sbox"><div class="sbox-val">8</div><div class="sbox-lbl">L2 mapeados</div></div>
+    <div class="sbox"><div class="sbox-val">154</div><div class="sbox-lbl">L2 pendentes</div></div>
+    <div class="sbox"><div class="sbox-val">248</div><div class="sbox-lbl">L3 pendentes</div></div>
+    <div class="sbox"><div class="sbox-val">4</div><div class="sbox-lbl">Padrões identificados</div></div>
+    <div class="sbox"><div class="sbox-val">38+</div><div class="sbox-lbl">Facets únicos catalogados</div></div>
+  </div>
+
+  <div class="legend">
+    <strong style="color:var(--muted);font-size:11px">Padrões:</strong>
+    <div class="leg-item"><span class="pat pat-A">A</span> B2B Standard — Availability → FI → Brand → SSN</div>
+    <div class="leg-item"><span class="pat pat-B">B</span> B2B + Atributos — A + facets de produto entre Brand e SSN</div>
+    <div class="leg-item"><span class="pat pat-C">C</span> Hospitality — FI → Categories → Availability → Brand → específicos (sem SSN)</div>
+    <div class="leg-item"><span class="pat pat-D">D</span> Misto — Availability padrão + bloco extenso de específicos + SSN</div>
+  </div>
+
+  <div class="section">Padrões por grupo</div>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Padrão</th><th>Nível L1</th><th>Comportamento L2</th><th>Depts</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><span class="pat pat-A">A</span></td>
+          <td>Sem facets específicos</td>
+          <td>L2s tornam-se Padrão B — adicionam facets de produto entre Brand e SSN</td>
+          <td>Office Supplies, Breakroom, Cleaning, Electronics, Computers & Acc.</td>
+        </tr>
+        <tr>
+          <td><span class="pat pat-B">B</span></td>
+          <td>Facets específicos de produto</td>
+          <td>L2s aprofundam os atributos (mais granulares, únicos por categoria)</td>
+          <td>Paper, Furniture, School Supplies</td>
+        </tr>
+        <tr>
+          <td><span class="pat pat-C">C</span></td>
+          <td>Hospitality — ordem invertida</td>
+          <td>L2s mantêm estrutura C com facets mais específicos. Sem SSN.</td>
+          <td>Bedding, In Room Solutions, Towels, Equipment, Food Service</td>
+        </tr>
+        <tr>
+          <td><span class="pat pat-D">D</span></td>
+          <td>Misto B2B + extenso</td>
+          <td>L2s seguem B2B com facets verticais únicos</td>
+          <td>Pet Supplies</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">Achados críticos</div>
+  <div class="cards">
+    <div class="card">
+      <div class="card-name">Availability nem sempre tem 3 opções</div>
+      <div class="card-section">Variações encontradas</div>
+      <p style="font-size:12px">Bags & Luggage e Calendars & Planners têm apenas 2 opções (sem Future Delivery). Categorias hospitality têm 1–2 opções. A presença de "Future Delivery" varia por tipo de produto.</p>
+    </div>
+    <div class="card">
+      <div class="card-name">Featured Items: 6 máx, mas varia muito</div>
+      <div class="card-section">Valores ausentes por dept</div>
+      <div class="fi-list">
+        <span class="fi-tag">Eco-Conscious</span>
+        <span class="fi-tag">New Arrivals</span>
+        <span class="fi-tag">ODP Clearance</span>
+        <span class="fi-tag">Free Delivery</span>
+        <span class="fi-tag">On Sale</span>
+        <span class="fi-tag">School Supplies</span>
+      </div>
+      <p style="font-size:12px;margin-top:6px">"On Sale" ausente em 8+ categorias. Hospitality tem no máximo 2 valores. Business Forms tem apenas 3.</p>
+    </div>
+    <div class="card">
+      <div class="card-name">Facets totalmente únicos encontrados</div>
+      <div class="card-section">Por categoria L2</div>
+      <div class="uniq-list">
+        <div class="uniq-item">Calendars: Calendar Year, Dated Format, Binding Type, Calendar Type</div>
+        <div class="uniq-item">Binders: Ring Size</div>
+        <div class="uniq-item">Bags: Maximum Computer Size</div>
+        <div class="uniq-item">Basic Supplies: Size (Staple), Total Quantity</div>
+        <div class="uniq-item">Pet Supplies: Pet Type, Flavor</div>
+        <div class="uniq-item">Food Service: Cup Type, Ply</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-name">SSN (Strategic Supplier Network) ausente em hospitality</div>
+      <div class="card-section">Padrão C — 5 depts afetados</div>
+      <p style="font-size:12px">Bedding, In Room Solutions, Towels & Bath Mats, Equipment e Food Service & Supplies não têm o facet "Strategic Supplier Network". Todos os outros depts mantêm SSN como último facet.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ L1 ALL ═══ -->
+<div class="panel" id="panel-l1">
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Departamento</th><th>N-Code</th><th>Padrão</th>
+          <th>Availability</th><th>Featured Items</th><th>Facets na Ordem</th><th>SSN</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Pattern A -->
+        <tr>
+          <td class="dept">Office Supplies</td><td class="ncode">N-1676</td>
+          <td><span class="pat pat-A">A</span></td>
+          <td><span class="avail-tag avail-3">3 opções</span></td>
+          <td>6 (completo)</td>
+          <td><div class="chain">
+            <span class="fc fc-std">Availability</span><span class="arr">→</span>
+            <span class="fc fc-std">Featured Items</span><span class="arr">→</span>
+            <span class="fc fc-std">Brand</span><span class="arr">→</span>
+            <span class="fc fc-ssn">SSN</span>
+          </div></td>
+          <td>✅</td>
+        </tr>
+        <tr>
+          <td class="dept">Breakroom</td><td class="ncode">N-530419</td>
+          <td><span class="pat pat-A">A</span></td>
+          <td><span class="avail-tag avail-3">3 opções</span></td>
+          <td>5 (sem On Sale)</td>
+          <td><div class="chain">
+            <span class="fc fc-std">Availability</span><span class="arr">→</span>
+            <span class="fc fc-std">Featured Items</span><span class="arr">→</span>
+            <span class="fc fc-std">Brand</span><span class="arr">→</span>
+            <span class="fc fc-ssn">SSN</span>
+          </div></td>
+          <td>✅</td>
+        </tr>
+        <tr>
+          <td class="dept">Cleaning</td><td class="ncode">N-530552</td>
+          <td><span class="pat pat-A">A</span></td>
+          <td><span class="avail-tag avail-3">3 opções</span></td>
+          <td>5 (sem On Sale)</td>
+          <td><div class="chain">
+            <span class="fc fc-std">Availability</span><span class="arr">→</span>
+            <span class="fc fc-std">Featured Items</span><span class="arr">→</span>
+            <span class="fc fc-std">Brand</span><span class="arr">→</span>
+            <span class="fc fc-ssn">SSN</span>
+          </div></td>
+          <td>✅</td>
+        </tr>
+        <tr>
+          <td class="dept">Electronics</td><td class="ncode">N-9021</td>
+          <td><span class="pat pat-A">A</span></td>
+          <td><span class="avail-tag avail-3">3 opções</span></td>
+          <td>5+ (On Sale pendente)</td>
+          <td><div class="chain">
+            <span class="fc fc-std">Availability</span><span class="arr">→</span>
+            <span class="fc fc-std">Featured Items</span><span class="arr">→</span>
+            <span class="fc fc-std">Brand</span><span class="arr">→</span>
+            <span class="fc fc-ssn">SSN</span>
+          </div></td>
+          <td>✅</td>
+        </tr>
+        <tr>
+          <td class="dept">Computers &amp; Accessories</td><td class="ncode">N-1461888</td>
+          <td><span class="pat pat-A">A</span></td>
+          <td><span class="avail-tag avail-3">3 opções</span></td>
+          <td>6 (completo)</td>
+          <td><div class="chain">
+            <span class="fc fc-std">Availability</span><span class="arr">→</span>
+            <span class="fc fc-std">Featured Items</span><span class="arr">→</span>
+            <span class="fc fc-std">Brand</span><span class="arr">→</span>
+            <span class="fc fc-ssn">SSN</span>
+          </div></td>
+          <td>✅</td>
+        </tr>
+        <!-- Pattern B -->
+        <tr style="background:#f7fff9">
+          <td class="dept">Paper</td><td class="ncode">N-530715</td>
+          <td><span class="pat pat-B">B</span></td>
+          <td><span class="avail-tag avail-3">3 opções</span></td>
+          <td>4 (sem Free Del., On Sale)</td>
+          <td><div class="chain">
+            <span class="fc fc-std">Availability</span><span class="arr">→</span>
+            <span class="fc fc-std">Featured Items</span><span class="arr">→</span>
+            <span class="fc fc-std">Brand</span><span class="arr">→</span>
+            <span class="fc fc-spec">Sheet Size</span><span class="arr">→</span>
+            <span class="fc fc-spec">Color</span><span class="arr">→</span>
+            <span class="fc fc-spec">Paper Brightness (US)</span><span class="arr">→</span>
+            <span class="fc fc-ssn">SSN</span>
+          </div></td>
+          <td>✅</td>
+        </tr>
+        <tr style="background:#f7fff9">
+          <td class="dept">Furniture</td><td class="ncode">N-917</td>
+          <td><span class="pat pat-B">B</span></td>
+          <td><span class="avail-tag avail-3">3 opções</span></td>
+          <td>6 (completo)</td>
+          <td><div class="chain">
+            <span class="fc fc-std">Availability</span><span class="arr">→</span>
+            <span class="fc fc-std">Featured Items</span><span class="arr">→</span>
+            <span class="fc fc-std">Brand</span><span class="arr">→</span>
+            <span class="fc fc-spec">Furniture Style</span><span class="arr">→</span>
+            <span class="fc fc-spec">Color</span><span class="arr">→</span>
+            <span class="fc fc-ssn">SSN</span>
+          </div></td>
+          <td>✅</td>
+        </tr>
+        <tr style="background:#f7fff9">
+          <td class="dept">School Supplies</td><td class="ncode">N-502600</td>
+          <td><span class="pat pat-B">B</span></td>
+          <td><span class="avail-tag avail-3">3 opções</span></td>
+          <td>5 (sem On Sale)</td>
+          <td><div class="chain">
+            <span class="fc fc-std">Availability</span><span class="arr">→</span>
+            <span class="fc fc-std">Featured Items</span><span class="arr">→</span>
+            <span class="fc fc-std">Brand</span><span class="arr">→</span>
+            <span class="fc fc-spec">Features</span><span class="arr">→</span>
+            <span class="fc fc-spec">Color</span><span class="arr">→</span>
+            <span class="fc fc-spec">Grades</span><span class="arr">→</span>
+            <span class="fc fc-spec">Quantity</span><span class="arr">→</span>
+            <span class="fc fc-spec">Number Of Pieces</span><span class="arr">→</span>
+            <span class="fc fc-ssn">SSN</span>
+          </div></td>
+          <td>✅</td>
+        </tr>
+        <!-- Pattern C -->
+        <tr style="background:#fffbf0">
+          <td class="dept">Bedding</td><td class="ncode">N-1780172</td>
+          <td><span class="pat pat-C">C</span></td>
+          <td><span class="avail-tag avail-2">1 opção</span></td>
+          <td>2 (Eco + New Arrivals)</td>
+          <td><div class="chain">
+            <span class="fc fc-std">Availability*</span><span class="arr">→</span>
+            <span class="fc fc-std">Featured Items</span><span class="arr">→</span>
+            <span class="fc fc-std">Brand</span><span class="arr">→</span>
+            <span class="fc fc-spec">Qty · Categories · Product Type · Width · Length · Features · Material Family · Closure Type · Color · Primary Material · Warranty · Depth</span>
+          </div></td>
+          <td>❌</td>
+        </tr>
+        <tr style="background:#fffbf0">
+          <td class="dept">In Room Solutions</td><td class="ncode">N-1780199</td>
+          <td><span class="pat pat-C">C</span></td>
+          <td><span class="avail-tag avail-2">2 opções</span></td>
+          <td>2 (Eco + New Arrivals)</td>
+          <td><div class="chain">
+            <span class="fc fc-std">Featured Items</span><span class="arr">→</span>
+            <span class="fc fc-spec">Categories</span><span class="arr">→</span>
+            <span class="fc fc-std">Availability</span><span class="arr">→</span>
+            <span class="fc fc-std">Brand</span><span class="arr">→</span>
+            <span class="fc fc-spec">Color · Features · Material Family · Qty · Primary Material · Depth · Height · Width · Product Type · Length · Size (container) · Capacity</span>
+          </div></td>
+          <td>❌</td>
+        </tr>
+        <tr style="background:#fffbf0">
+          <td class="dept">Towels &amp; Bath Mats</td><td class="ncode">N-1780241</td>
+          <td><span class="pat pat-C">C</span></td>
+          <td><span class="avail-tag avail-2">2 opções</span></td>
+          <td>2 (Eco + New Arrivals)</td>
+          <td><div class="chain">
+            <span class="fc fc-std">Featured Items</span><span class="arr">→</span>
+            <span class="fc fc-spec">Categories</span><span class="arr">→</span>
+            <span class="fc fc-std">Availability</span><span class="arr">→</span>
+            <span class="fc fc-std">Brand</span><span class="arr">→</span>
+            <span class="fc fc-spec">Color · Material Family · Primary Material · Length · Features · Product Type · Width · Qty · Recommended Surfaces · Product Form · Cleaner Use</span>
+          </div></td>
+          <td>❌</td>
+        </tr>
+        <tr style="background:#fffbf0">
+          <td class="dept">Equipment</td><td class="ncode">N-1782308</td>
+          <td><span class="pat pat-C">C</span></td>
+          <td><span class="avail-tag avail-2">1 opção</span></td>
+          <td>1 (New Arrivals only)</td>
+          <td><div class="chain">
+            <span class="fc fc-std">Featured Items</span><span class="arr">→</span>
+            <span class="fc fc-spec">Categories</span><span class="arr">→</span>
+            <span class="fc fc-std">Availability</span><span class="arr">→</span>
+            <span class="fc fc-std">Brand</span><span class="arr">→</span>
+            <span class="fc fc-spec">Height · Assembly · Color · Material Family · Width · Primary Material · Weight Capacity · Product Type · Qty · Warranty · Depth · Features</span>
+          </div></td>
+          <td>❌</td>
+        </tr>
+        <tr style="background:#fffbf0">
+          <td class="dept">Food Service &amp; Supplies</td><td class="ncode">N-1783637</td>
+          <td><span class="pat pat-C">C</span></td>
+          <td><span class="avail-tag avail-2">2 opções</span></td>
+          <td>1 (New Arrivals only)</td>
+          <td><div class="chain">
+            <span class="fc fc-std">Featured Items</span><span class="arr">→</span>
+            <span class="fc fc-spec">Categories</span><span class="arr">→</span>
+            <span class="fc fc-std">Availability</span><span class="arr">→</span>
+            <span class="fc fc-std">Brand</span><span class="arr">→</span>
+            <span class="fc fc-spec">Primary Material · Features · Material Family · Color · Ply · Product Type · Height · Width · Theme · Cup Type · Capacity</span>
+          </div></td>
+          <td>❌</td>
+        </tr>
+        <!-- Pattern D -->
+        <tr style="background:#fdf5ff">
+          <td class="dept">Pet Supplies</td><td class="ncode">N-1249606</td>
+          <td><span class="pat pat-D">D</span></td>
+          <td><span class="avail-tag avail-3">3 opções</span></td>
+          <td>3 (Eco, New, School)</td>
+          <td><div class="chain">
+            <span class="fc fc-std">Availability</span><span class="arr">→</span>
+            <span class="fc fc-std">Featured Items</span><span class="arr">→</span>
+            <span class="fc fc-std">Brand</span><span class="arr">→</span>
+            <span class="fc fc-spec">Features · Color · Product Type · Recommended Surfaces · Material Family · Contents Per Unit · Qty</span><span class="arr">→</span>
+            <span class="fc fc-uniq">Pet Type</span><span class="arr">→</span>
+            <span class="fc fc-uniq">Flavor</span><span class="arr">→</span>
+            <span class="fc fc-spec">Container Weight</span><span class="arr">→</span>
+            <span class="fc fc-ssn">SSN</span>
+          </div></td>
+          <td>✅</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p style="font-size:11px;color:var(--muted);margin-top:10px">* Bedding: Availability aparece antes de Featured Items (ligeira variação do padrão C) · Legenda cores: <span class="fc fc-std" style="font-size:10px">universal</span> <span class="fc fc-spec" style="font-size:10px">específico</span> <span class="fc fc-uniq" style="font-size:10px">exclusivo</span> <span class="fc fc-ssn" style="font-size:10px">SSN</span></p>
+</div>
+
+<!-- ═══ L2 OFFICE SUPPLIES ═══ -->
+<div class="panel" id="panel-l2-os">
+
+  <p style="font-size:13px;color:var(--muted);margin-bottom:1.5rem">8 de 20 L2s mapeados do departamento Office Supplies. Todos seguem o <span class="pat pat-B">Padrão B</span> — acrescentam facets específicos de produto entre Brand e SSN.</p>
+
+  <div class="cards">
+
+    <!-- Art & Crafting -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-name">Art &amp; Crafting</span>
+        <span class="card-ncode">N-639147</span>
+        <span class="stat-done">✓ mapeado</span>
+      </div>
+      <div class="chain">
+        <span class="fc fc-std">Availability (3)</span><span class="arr">→</span>
+        <span class="fc fc-std">Featured Items</span><span class="arr">→</span>
+        <span class="fc fc-std">Brand</span><span class="arr">→</span>
+        <span class="fc fc-spec">Features</span><span class="arr">→</span>
+        <span class="fc fc-spec">Quantity</span><span class="arr">→</span>
+        <span class="fc fc-spec">Color</span><span class="arr">→</span>
+        <span class="fc fc-spec">Size (container)</span><span class="arr">→</span>
+        <span class="fc fc-spec">Material Family</span><span class="arr">→</span>
+        <span class="fc fc-ssn">SSN</span>
+      </div>
+      <div class="card-section">Featured Items (5)</div>
+      <div class="fi-list">
+        <span class="fi-tag">Eco-Conscious</span>
+        <span class="fi-tag">Free Delivery</span>
+        <span class="fi-tag">New Arrivals</span>
+        <span class="fi-tag">ODP Clearance</span>
+        <span class="fi-miss">On Sale</span>
+        <span class="fi-tag">School Supplies</span>
+      </div>
+      <div class="note">Padrão B típico. Features inclui "Washable", "Nontoxic", "Smudge Resistant".</div>
+    </div>
+
+    <!-- Bags & Luggage -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-name">Bags &amp; Luggage</span>
+        <span class="card-ncode">N-2674</span>
+        <span class="stat-done">✓ mapeado</span>
+      </div>
+      <div class="chain">
+        <span class="fc fc-std">Availability (2)</span><span class="arr">→</span>
+        <span class="fc fc-std">Featured Items</span><span class="arr">→</span>
+        <span class="fc fc-std">Brand</span><span class="arr">→</span>
+        <span class="fc fc-spec">Features</span><span class="arr">→</span>
+        <span class="fc fc-spec">Color</span><span class="arr">→</span>
+        <span class="fc fc-spec">Material Family</span><span class="arr">→</span>
+        <span class="fc fc-uniq">Maximum Computer Size</span><span class="arr">→</span>
+        <span class="fc fc-spec">Quantity</span><span class="arr">→</span>
+        <span class="fc fc-ssn">SSN</span>
+      </div>
+      <div class="card-section">Featured Items (4)</div>
+      <div class="fi-list">
+        <span class="fi-tag">Eco-Conscious</span>
+        <span class="fi-miss">Free Delivery</span>
+        <span class="fi-tag">New Arrivals</span>
+        <span class="fi-tag">ODP Clearance</span>
+        <span class="fi-miss">On Sale</span>
+        <span class="fi-tag">School Supplies</span>
+      </div>
+      <div class="uniq-list"><div class="uniq-item">Maximum Computer Size — tamanho máx. do laptop (em polegadas)</div></div>
+      <div class="note">⚠ Availability só 2 opções (sem Future Delivery)</div>
+    </div>
+
+    <!-- Basic Supplies -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-name">Basic Supplies</span>
+        <span class="card-ncode">N-1886</span>
+        <span class="stat-done">✓ mapeado</span>
+      </div>
+      <div class="chain">
+        <span class="fc fc-std">Availability (3)</span><span class="arr">→</span>
+        <span class="fc fc-std">Featured Items</span><span class="arr">→</span>
+        <span class="fc fc-std">Brand</span><span class="arr">→</span>
+        <span class="fc fc-spec">Features</span><span class="arr">→</span>
+        <span class="fc fc-uniq">Total Quantity</span><span class="arr">→</span>
+        <span class="fc fc-spec">Quantity</span><span class="arr">→</span>
+        <span class="fc fc-spec">Color</span><span class="arr">→</span>
+        <span class="fc fc-spec">Material Family</span><span class="arr">→</span>
+        <span class="fc fc-uniq">Size (Staple)</span><span class="arr">→</span>
+        <span class="fc fc-ssn">SSN</span>
+      </div>
+      <div class="card-section">Featured Items (5)</div>
+      <div class="fi-list">
+        <span class="fi-tag">Eco-Conscious</span>
+        <span class="fi-tag">Free Delivery</span>
+        <span class="fi-tag">New Arrivals</span>
+        <span class="fi-tag">ODP Clearance</span>
+        <span class="fi-miss">On Sale</span>
+        <span class="fi-tag">School Supplies</span>
+      </div>
+      <div class="uniq-list">
+        <div class="uniq-item">Total Quantity — conta por tipo de produto (ex: "3 Binder Clips")</div>
+        <div class="uniq-item">Size (Staple) — tamanho do grampo em polegadas</div>
+      </div>
+    </div>
+
+    <!-- Binders & Accessories -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-name">Binders &amp; Accessories</span>
+        <span class="card-ncode">N-2155</span>
+        <span class="stat-done">✓ mapeado</span>
+      </div>
+      <div class="chain">
+        <span class="fc fc-std">Availability (3)</span><span class="arr">→</span>
+        <span class="fc fc-std">Featured Items</span><span class="arr">→</span>
+        <span class="fc fc-std">Brand</span><span class="arr">→</span>
+        <span class="fc fc-spec">Features</span><span class="arr">→</span>
+        <span class="fc fc-spec">Quantity</span><span class="arr">→</span>
+        <span class="fc fc-spec">Color</span><span class="arr">→</span>
+        <span class="fc fc-uniq">Ring Size</span><span class="arr">→</span>
+        <span class="fc fc-spec">Material Family</span><span class="arr">→</span>
+        <span class="fc fc-ssn">SSN</span>
+      </div>
+      <div class="card-section">Featured Items (4)</div>
+      <div class="fi-list">
+        <span class="fi-tag">Eco-Conscious</span>
+        <span class="fi-miss">Free Delivery</span>
+        <span class="fi-tag">New Arrivals</span>
+        <span class="fi-tag">ODP Clearance</span>
+        <span class="fi-miss">On Sale</span>
+        <span class="fi-tag">School Supplies</span>
+      </div>
+      <div class="uniq-list"><div class="uniq-item">Ring Size — tamanho do aro em polegadas (½, 1, 1½, 2, 2½...)</div></div>
+    </div>
+
+    <!-- Business Forms -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-name">Business Forms &amp; Bookkeeping</span>
+        <span class="card-ncode">N-516208</span>
+        <span class="stat-done">✓ mapeado</span>
+      </div>
+      <div class="chain">
+        <span class="fc fc-std">Availability (3)</span><span class="arr">→</span>
+        <span class="fc fc-std">Featured Items</span><span class="arr">→</span>
+        <span class="fc fc-std">Brand</span><span class="arr">→</span>
+        <span class="fc fc-spec">Features</span><span class="arr">→</span>
+        <span class="fc fc-spec">Quantity</span><span class="arr">→</span>
+        <span class="fc fc-ssn">SSN</span>
+      </div>
+      <div class="card-section">Featured Items (3)</div>
+      <div class="fi-list">
+        <span class="fi-tag">Eco-Conscious</span>
+        <span class="fi-miss">Free Delivery</span>
+        <span class="fi-tag">New Arrivals</span>
+        <span class="fi-miss">ODP Clearance</span>
+        <span class="fi-miss">On Sale</span>
+        <span class="fi-tag">School Supplies</span>
+      </div>
+      <div class="note">⚠ Apenas 3 Featured Items — menor conjunto observado até agora. Features inclui "Carbonless", "Consecutively Numbered", "Heat-Resistant Ink".</div>
+    </div>
+
+    <!-- Calendars & Planners -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-name">Calendars &amp; Planners</span>
+        <span class="card-ncode">N-1131206</span>
+        <span class="stat-done">✓ mapeado</span>
+      </div>
+      <div class="chain">
+        <span class="fc fc-std">Availability (2)</span><span class="arr">→</span>
+        <span class="fc fc-std">Featured Items</span><span class="arr">→</span>
+        <span class="fc fc-std">Brand</span><span class="arr">→</span>
+        <span class="fc fc-uniq">Calendar Year</span><span class="arr">→</span>
+        <span class="fc fc-uniq">Dated Format</span><span class="arr">→</span>
+        <span class="fc fc-uniq">Binding Type</span><span class="arr">→</span>
+        <span class="fc fc-spec">Features</span><span class="arr">→</span>
+        <span class="fc fc-uniq">Calendar Type</span><span class="arr">→</span>
+        <span class="fc fc-spec">Material Family</span><span class="arr">→</span>
+        <span class="fc fc-spec">Color</span>
+      </div>
+      <div class="card-section">Featured Items (4)</div>
+      <div class="fi-list">
+        <span class="fi-tag">Eco-Conscious</span>
+        <span class="fi-miss">Free Delivery</span>
+        <span class="fi-tag">New Arrivals</span>
+        <span class="fi-tag">ODP Clearance</span>
+        <span class="fi-miss">On Sale</span>
+        <span class="fi-tag">School Supplies</span>
+      </div>
+      <div class="uniq-list">
+        <div class="uniq-item">Calendar Year — ano do calendário (2024, 2024-2025…)</div>
+        <div class="uniq-item">Dated Format — Monthly, Weekly/Monthly, Daily, etc.</div>
+        <div class="uniq-item">Binding Type — Bookbound, Disc Bound, Wire-O, etc.</div>
+        <div class="uniq-item">Calendar Type — Academic Year / Regular Year</div>
+      </div>
+      <div class="note">⚠ Availability só 2 opções (sem Future Delivery)</div>
+    </div>
+
+    <!-- Mailing Packing Shipping -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-name">Mailing, Packing &amp; Shipping</span>
+        <span class="card-ncode">N-3912</span>
+        <span class="stat-done">✓ mapeado</span>
+      </div>
+      <div class="chain">
+        <span class="fc fc-std">Availability (3)</span><span class="arr">→</span>
+        <span class="fc fc-std">Featured Items</span><span class="arr">→</span>
+        <span class="fc fc-std">Brand</span><span class="arr">→</span>
+        <span class="fc fc-spec">Features</span><span class="arr">→</span>
+        <span class="fc fc-uniq">Length</span><span class="arr">→</span>
+        <span class="fc fc-spec">Color</span><span class="arr">→</span>
+        <span class="fc fc-spec">Material Family</span>
+      </div>
+      <div class="card-section">Featured Items (4)</div>
+      <div class="fi-list">
+        <span class="fi-tag">Eco-Conscious</span>
+        <span class="fi-tag">Free Delivery</span>
+        <span class="fi-tag">New Arrivals</span>
+        <span class="fi-tag">ODP Clearance</span>
+        <span class="fi-miss">On Sale</span>
+        <span class="fi-miss">School Supplies</span>
+      </div>
+      <div class="uniq-list"><div class="uniq-item">Length — dimensão em polegadas (182 valores distintos)</div></div>
+      <div class="note">School Supplies ausente de Featured Items. Página pode estar truncada (SSN não confirmado).</div>
+    </div>
+
+    <!-- Filing & Folders -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-name">Filing &amp; Folders</span>
+        <span class="card-ncode">N-3469</span>
+        <span class="stat-done">✓ mapeado</span>
+      </div>
+      <div class="chain">
+        <span class="fc fc-std">Availability (3)</span><span class="arr">→</span>
+        <span class="fc fc-std">Featured Items</span><span class="arr">→</span>
+        <span class="fc fc-std">Brand</span><span class="arr">→</span>
+        <span class="fc fc-spec">Quantity</span><span class="arr">→</span>
+        <span class="fc fc-uniq">Total Quantity</span><span class="arr">→</span>
+        <span class="fc fc-ssn">SSN</span>
+      </div>
+      <div class="card-section">Featured Items (5)</div>
+      <div class="fi-list">
+        <span class="fi-tag">Eco-Conscious</span>
+        <span class="fi-tag">Free Delivery</span>
+        <span class="fi-tag">New Arrivals</span>
+        <span class="fi-tag">ODP Clearance</span>
+        <span class="fi-miss">On Sale</span>
+        <span class="fi-tag">School Supplies</span>
+      </div>
+      <div class="uniq-list"><div class="uniq-item">Total Quantity — quantidade por tipo de pasta (ex: "5 File Folders")</div></div>
+      <div class="note">Página possivelmente truncada — URLs mostram também: Categories, Product Type, Color.</div>
+    </div>
+
+    <!-- Pending L2s -->
+    <div class="card" style="background:#fffbf0;border-color:#fbd38d">
+      <div class="card-header">
+        <span class="card-name" style="color:var(--pend)">12 L2s pendentes — Office Supplies</span>
+        <span class="stat-pend">⏳ pendente</span>
+      </div>
+      <div style="font-size:12px;color:var(--muted);display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;margin-top:6px">
+        <span>• Desk Accessories (N-1170326)</span>
+        <span>• Drafting (N-639171)</span>
+        <span>• Gift Certificates (N-581697)</span>
+        <span>• Labels &amp; Label Makers (N-1159754)</span>
+        <span>• Labor Law &amp; Workplace Posters (N-1500905)</span>
+        <span>• Laminating (N-1505116)</span>
+        <span>• Presentation Boards (N-1677)</span>
+        <span>• Retail Store Supplies (N-581704)</span>
+        <span>• Sticky Notes &amp; Flags (N-1563983)</span>
+        <span>• Storage (N-1123252)</span>
+        <span>• Tape &amp; Adhesives (N-371557)</span>
+        <span>• Writing Supplies (N-4367)</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══ FACET INVENTORY ═══ -->
+<div class="panel" id="panel-facet-inventory">
+  <p style="font-size:13px;color:var(--muted);margin-bottom:1.5rem">Inventário completo de todos os facets identificados até agora — nome, tipo, categorias onde aparece.</p>
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr><th>Facet</th><th>Tipo</th><th>Encontrado em</th><th>Observações</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="dept">Availability</td><td>Universal</td><td>Todos os depts</td><td>3 opts padrão; 2 opts (sem Future Delivery) em alguns; 1 opt em hospitality</td></tr>
+        <tr><td class="dept">Featured Items</td><td>Universal</td><td>Todos os depts</td><td>6 vals máx; varia de 1 a 6; hospitality tem 1-2 vals</td></tr>
+        <tr><td class="dept">Brand</td><td>Universal</td><td>Todos os depts</td><td>Sempre presente, sempre após Featured Items</td></tr>
+        <tr><td class="dept">Strategic Supplier Network (SSN)</td><td>Universal B2B</td><td>Depts B2B (padrão A/B/D)</td><td>Ausente em todos os depts Hospitality (padrão C)</td></tr>
+        <tr><td class="dept">Features</td><td>Específico comum</td><td>Art & Crafting, Bags, Basic Supplies, Binders, Business Forms, Mailing…</td><td>Valores variam muito por categoria</td></tr>
+        <tr><td class="dept">Color</td><td>Específico comum</td><td>Art & Crafting, Bags, Binders, Paper, Furniture, School…</td><td>Presente em maioria das categorias de produto físico</td></tr>
+        <tr><td class="dept">Quantity</td><td>Específico comum</td><td>Art & Crafting, Bags, Basic Supplies, Binders, Business Forms, Filing…</td><td>Qtde de unidades por embalagem</td></tr>
+        <tr><td class="dept">Material Family</td><td>Específico comum</td><td>Art & Crafting, Bags, Basic Supplies, Binders, In Room, Towels…</td><td>Plástico, Metal, Tecido, Papel, etc.</td></tr>
+        <tr><td class="dept">Primary Material</td><td>Específico hospitality</td><td>Bedding, In Room, Towels, Food Service</td><td>Mais granular que Material Family (Cotton Blend, Microfiber, etc.)</td></tr>
+        <tr><td class="dept">Product Type</td><td>Específico</td><td>In Room, Equipment, Pet Supplies, Presentation Boards (inferido)…</td><td>Subcategoria de produto</td></tr>
+        <tr><td class="dept">Categories</td><td>Específico hospitality</td><td>Bedding, In Room, Towels, Equipment, Food Service</td><td>Sempre em 2º lugar no padrão C</td></tr>
+        <tr><td class="dept">Width / Length / Height / Depth</td><td>Dimensional</td><td>Bedding, In Room, Towels, Equipment, Mailing</td><td>Dimensões físicas do produto</td></tr>
+        <tr><td class="dept">Weight Capacity</td><td>Dimensional</td><td>Equipment</td><td>Capacidade máxima de peso</td></tr>
+        <tr><td class="dept">Furniture Style</td><td>Exclusivo</td><td>Furniture (L1)</td><td>Architectural, Bohemian, Casual, Commercial…</td></tr>
+        <tr><td class="dept">Sheet Size</td><td>Exclusivo</td><td>Paper (L1)</td><td>Letter, Legal, Ledger/Tabloid, 9"x12"…</td></tr>
+        <tr><td class="dept">Paper Brightness (US)</td><td>Exclusivo</td><td>Paper (L1)</td><td>Valores numéricos de brilho</td></tr>
+        <tr><td class="dept">Grades</td><td>Exclusivo</td><td>School Supplies (L1)</td><td>K-5, 6-8, 9-12, College</td></tr>
+        <tr><td class="dept">Number Of Pieces</td><td>Exclusivo</td><td>School Supplies (L1)</td><td>200+ valores</td></tr>
+        <tr><td class="dept">Closure Type</td><td>Exclusivo</td><td>Bedding</td><td>Elastic Cord, Lock, Velcro, Zipper</td></tr>
+        <tr><td class="dept">Recommended Surfaces</td><td>Exclusivo</td><td>Towels & Bath Mats, Pet Supplies</td><td>Superfícies recomendadas para uso</td></tr>
+        <tr><td class="dept">Product Form</td><td>Exclusivo</td><td>Towels, Food Service</td><td>Wipe, Liquid, Spray…</td></tr>
+        <tr><td class="dept">Cleaner Use</td><td>Exclusivo</td><td>Towels & Bath Mats</td><td>Commercial / Household</td></tr>
+        <tr><td class="dept">Assembly</td><td>Exclusivo</td><td>Equipment</td><td>Assembly Required / Preassembled</td></tr>
+        <tr><td class="dept">Warranty</td><td>Exclusivo</td><td>Bedding, Equipment</td><td>Anos de garantia</td></tr>
+        <tr><td class="dept">Ply</td><td>Exclusivo</td><td>Food Service & Supplies</td><td>1.0, 2.0, 3.0 camadas</td></tr>
+        <tr><td class="dept">Cup Type</td><td>Exclusivo</td><td>Food Service & Supplies</td><td>Cold Cup, Hot Cup, Hot Cup/Cold Cup</td></tr>
+        <tr><td class="dept">Capacity</td><td>Exclusivo</td><td>Food Service, In Room</td><td>Capacidade em oz, cups ou cu ft</td></tr>
+        <tr><td class="dept">Theme</td><td>Exclusivo</td><td>Food Service & Supplies</td><td>Valor único: None</td></tr>
+        <tr><td class="dept">Size (container)</td><td>Exclusivo</td><td>Art & Crafting, In Room</td><td>Volume da embalagem em oz</td></tr>
+        <tr><td class="dept">Pet Type</td><td>Exclusivo</td><td>Pet Supplies</td><td>Cat / Dog</td></tr>
+        <tr><td class="dept">Flavor</td><td>Exclusivo</td><td>Pet Supplies</td><td>Beef, Blueberry, Peanut Butter… 14 valores</td></tr>
+        <tr><td class="dept">Contents Per Unit</td><td>Exclusivo</td><td>Pet Supplies</td><td>Peso do conteúdo por unidade</td></tr>
+        <tr><td class="dept">Container Weight</td><td>Exclusivo</td><td>Pet Supplies</td><td>Peso total da embalagem</td></tr>
+        <!-- L2 unique -->
+        <tr style="background:#f0fff4"><td class="dept">Maximum Computer Size</td><td><span class="fc fc-uniq" style="font-size:10px">Exclusivo L2</span></td><td>Bags &amp; Luggage</td><td>Tamanho máx. do laptop compatível</td></tr>
+        <tr style="background:#f0fff4"><td class="dept">Ring Size</td><td><span class="fc fc-uniq" style="font-size:10px">Exclusivo L2</span></td><td>Binders &amp; Accessories</td><td>Tamanho do aro (½" a 5")</td></tr>
+        <tr style="background:#f0fff4"><td class="dept">Total Quantity</td><td><span class="fc fc-uniq" style="font-size:10px">Exclusivo L2</span></td><td>Basic Supplies, Filing &amp; Folders</td><td>Qtde por tipo de produto (ex: "3 Binder Clips")</td></tr>
+        <tr style="background:#f0fff4"><td class="dept">Size (Staple)</td><td><span class="fc fc-uniq" style="font-size:10px">Exclusivo L2</span></td><td>Basic Supplies</td><td>Tamanho do grampo em polegadas</td></tr>
+        <tr style="background:#f0fff4"><td class="dept">Calendar Year</td><td><span class="fc fc-uniq" style="font-size:10px">Exclusivo L2</span></td><td>Calendars &amp; Planners</td><td>Ano(s) do calendário</td></tr>
+        <tr style="background:#f0fff4"><td class="dept">Dated Format</td><td><span class="fc fc-uniq" style="font-size:10px">Exclusivo L2</span></td><td>Calendars &amp; Planners</td><td>Monthly, Weekly, Daily, etc.</td></tr>
+        <tr style="background:#f0fff4"><td class="dept">Binding Type</td><td><span class="fc fc-uniq" style="font-size:10px">Exclusivo L2</span></td><td>Calendars &amp; Planners</td><td>Bookbound, Disc Bound, Wire-O, etc.</td></tr>
+        <tr style="background:#f0fff4"><td class="dept">Calendar Type</td><td><span class="fc fc-uniq" style="font-size:10px">Exclusivo L2</span></td><td>Calendars &amp; Planners</td><td>Academic Year / Regular Year</td></tr>
+        <tr style="background:#f0fff4"><td class="dept">Length (Mailing)</td><td><span class="fc fc-uniq" style="font-size:10px">Exclusivo L2</span></td><td>Mailing, Packing &amp; Shipping</td><td>Dimensão em polegadas (182 valores)</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p style="font-size:11px;color:var(--muted);margin-top:10px">Linhas em verde = facets exclusivos encontrados em L2 (não presentes no L1)</p>
+</div>
+
+<!-- ═══ PENDING ═══ -->
+<div class="panel" id="panel-pending">
+  <p style="font-size:13px;color:var(--muted);margin-bottom:1.5rem">URLs pendentes para completar a análise L2 + L3. Total: 154 L2s + 248 L3s = <strong>402 páginas</strong>.</p>
+
+  <div class="tbl-wrap">
+  <table>
+    <thead><tr><th>#</th><th>Departamento (L1)</th><th>Categoria (L2)</th><th>N-Code</th><th>URL</th><th>L3s</th><th>Status</th></tr></thead>
+    <tbody>
+      <!-- Office Supplies pending -->
+      <tr><td>1</td><td>Office Supplies</td><td>Desk Accessories</td><td>N-1170326</td><td>/b/desk-accessories/N-1170326</td><td>0</td><td><span class="stat-pend">pendente</span></td></tr>
+      <tr><td>2</td><td>Office Supplies</td><td>Drafting</td><td>N-639171</td><td>/b/drafting/N-639171</td><td>0</td><td><span class="stat-pend">pendente</span></td></tr>
+      <tr><td>3</td><td>Office Supplies</td><td>Gift Certificates</td><td>N-581697</td><td>/b/gift-certificates/N-581697</td><td>0</td><td><span class="stat-pend">pendente</span></td></tr>
+      <tr><td>4</td><td>Office Supplies</td><td>Labels &amp; Label Makers</td><td>N-1159754</td><td>/b/labels-and-label-makers/N-1159754</td><td>2</td><td><span class="stat-pend">pendente</span></td></tr>
+      <tr><td>5</td><td>Office Supplies</td><td>Labor Law &amp; Workplace Posters</td><td>N-1500905</td><td>/b/labor-law-and-workplace-posters/N-1500905</td><td>0</td><td><span class="stat-pend">pendente</span></td></tr>
+      <tr><td>6</td><td>Office Supplies</td><td>Laminating</td><td>N-1505116</td><td>/b/laminating/N-1505116</td><td>0</td><td><span class="stat-pend">pendente</span></td></tr>
+      <tr><td>7</td><td>Office Supplies</td><td>Presentation Boards</td><td>N-1677</td><td>/b/presentation-boards/N-1677</td><td>0</td><td><span class="stat-pend">pendente</span></td></tr>
+      <tr><td>8</td><td>Office Supplies</td><td>Retail Store Supplies</td><td>N-581704</td><td>/b/retail-store-supplies/N-581704</td><td>0</td><td><span class="stat-pend">pendente</span></td></tr>
+      <tr><td>9</td><td>Office Supplies</td><td>Sticky Notes &amp; Flags</td><td>N-1563983</td><td>/b/sticky-notes-and-flags/N-1563983</td><td>0</td><td><span class="stat-pend">pendente</span></td></tr>
+      <tr><td>10</td><td>Office Supplies</td><td>Storage</td><td>N-1123252</td><td>/b/storage/N-1123252</td><td>2</td><td><span class="stat-pend">pendente</span></td></tr>
+      <tr><td>11</td><td>Office Supplies</td><td>Tape &amp; Adhesives</td><td>N-371557</td><td>/b/tape-and-adhesives/N-371557</td><td>0</td><td><span class="stat-pend">pendente</span></td></tr>
+      <tr><td>12</td><td>Office Supplies</td><td>Writing Supplies</td><td>N-4367</td><td>/b/writing-supplies/N-4367</td><td>3</td><td><span class="stat-pend">pendente</span></td></tr>
+      <!-- Paper L2s -->
+      <tr><td>13</td><td>Paper</td><td>Art &amp; Craft Paper</td><td>N-530716</td><td>/b/art-and-craft-paper/N-530716</td><td>2</td><td><span class="stat-pend">pendente</span></td></tr>
+      <tr><td>14</td><td>Paper</td><td>Cash Register &amp; Thermal Rolls</td><td>N-530723</td><td>/b/cash-register-and-thermal-rolls/N-530723</td><td>0</td><td><span class="stat-pend">pendente</span></td></tr>
+      <tr><td>15</td><td>Paper</td><td>Certificates &amp; Covers</td><td>N-533805</td><td>/b/certificates-and-covers/N-533805</td><td>0</td><td><span class="stat-pend">pendente</span></td></tr>
+      <tr><td>16</td><td>Paper</td><td>Copy &amp; Printer Paper</td><td>N-530728</td><td>/b/copy-and-printer-paper/N-530728</td><td>5</td><td><span class="stat-pend">pendente</span></td></tr>
+      <tr><td>17</td><td>Paper</td><td>Filler &amp; Graph Paper</td><td>N-549821</td><td>/b/filler-and-graph-paper/N-549821</td><td>0</td><td><span class="stat-pend">pendente</span></td></tr>
+      <tr><td>18</td><td>Paper</td><td>Index Cards</td><td>N-1123261</td><td>/b/index-cards/N-1123261</td><td>0</td><td><span class="stat-pend">pendente</span></td></tr>
+      <tr><td>19</td><td>Paper</td><td>Invitations &amp; Cards</td><td>N-530734</td><td>/b/invitations-and-cards/N-530734</td><td>0</td><td><span class="stat-pend">pendente</span></td></tr>
+      <tr><td>20</td><td>Paper</td><td>Notebooks &amp; Pads</td><td>N-530741</td><td>/b/notebooks-and-pads/N-530741</td><td>4</td><td><span class="stat-pend">pendente</span></td></tr>
+      <tr><td>21</td><td>Paper</td><td>Photo &amp; Presentation Paper</td><td>N-530747</td><td>/b/photo-and-presentation-paper/N-530747</td><td>3</td><td><span class="stat-pend">pendente</span></td></tr>
+      <tr><td>22</td><td>Paper</td><td>Sticky Notes &amp; Flags</td><td>N-549832</td><td>/b/sticky-notes-and-flags/N-549832</td><td>3</td><td><span class="stat-pend">pendente</span></td></tr>
+      <!-- Breakroom L2s -->
+      <tr><td>23</td><td>Breakroom</td><td>Appliances</td><td>N-530420</td><td>/b/appliances/N-530420</td><td>2</td><td><span class="stat-pend">pendente</span></td></tr>
+      <tr><td>24</td><td>Breakroom</td><td>Beverages</td><td>N-1154865</td><td>/b/beverages/N-1154865</td><td>3</td><td><span class="stat-pend">pendente</span></td></tr>
+      <tr><td>25</td><td>Breakroom</td><td>Candy &amp; Snacks</td><td>N-1418009</td><td>/b/candy-and-snacks/N-1418009</td><td>3</td><td><span class="stat-pend">pendente</span></td></tr>
+      <tr><td>26</td><td>Breakroom</td><td>Coffee &amp; Coffee Supplies</td><td>N-1154872</td><td>/b/coffee-and-coffee-supplies/N-1154872</td><td>2</td><td><span class="stat-pend">pendente</span></td></tr>
+      <tr><td>27</td><td>Breakroom</td><td>Cookware</td><td>N-587972</td><td>/b/cookware/N-587972</td><td>0</td><td><span class="stat-pend">pendente</span></td></tr>
+      <tr><td>28</td><td>Breakroom</td><td>Cups, Plates &amp; Cutlery</td><td>N-1176169</td><td>/b/cups-plates-and-cutlery/N-1176169</td><td>3</td><td><span class="stat-pend">pendente</span></td></tr>
+      <tr><td>29</td><td>Breakroom</td><td>First Aid</td><td>N-530492</td><td>/b/first-aid/N-530492</td><td>3</td><td><span class="stat-pend">pendente</span></td></tr>
+      <tr><td>30</td><td>Breakroom</td><td>Fresh &amp; Frozen Foods</td><td>N-1418020</td><td>/b/fresh-and-frozen-foods/N-1418020</td><td>3</td><td><span class="stat-pend">pendente</span></td></tr>
+      <tr><td>31</td><td>Breakroom</td><td>Party Supplies</td><td>N-1577569</td><td>/b/party-supplies/N-1577569</td><td>0</td><td><span class="stat-pend">pendente</span></td></tr>
+      <!-- Cleaning L2s -->
+      <tr><td>32</td><td>Cleaning</td><td>Air Fresheners</td><td>N-1176180</td><td>/b/air-fresheners/N-1176180</td><td>0</td><td><span class="stat-pend">pendente</span></td></tr>
+      <tr><td>33</td><td>Cleaning</td><td>Cleaning Supplies</td><td>N-1477628</td><td>/b/cleaning-supplies/N-1477628</td><td>3</td><td><span class="stat-pend">pendente</span></td></tr>
+      <tr><td>34</td><td>Cleaning</td><td>Cleaning Tools</td><td>N-1176181</td><td>/b/cleaning-tools/N-1176181</td><td>3</td><td><span class="stat-pend">pendente</span></td></tr>
+      <tr><td>35</td><td>Cleaning</td><td>Facial Tissues</td><td>N-1170285</td><td>/b/facial-tissues/N-1170285</td><td>0</td><td><span class="stat-pend">pendente</span></td></tr>
+      <tr><td>36</td><td>Cleaning</td><td>Facility Supplies</td><td>N-530626</td><td>/b/facility-supplies/N-530626</td><td>1</td><td><span class="stat-pend">pendente</span></td></tr>
+      <tr><td>37</td><td>Cleaning</td><td>Hand Sanitizers</td><td>N-1170286</td><td>/b/hand-sanitizers/N-1170286</td><td>0</td><td><span class="stat-pend">pendente</span></td></tr>
+      <tr><td>38</td><td>Cleaning</td><td>Hand Soap</td><td>N-1170287</td><td>/b/hand-soap/N-1170287</td><td>0</td><td><span class="stat-pend">pendente</span></td></tr>
+      <tr><td>39</td><td>Cleaning</td><td>Material Handling</td><td>N-654405</td><td>/b/material-handling/N-654405</td><td>0</td><td><span class="stat-pend">pendente</span></td></tr>
+      <tr><td>40</td><td>Cleaning</td><td>Medical Supplies</td><td>N-654427</td><td>/b/medical-supplies/N-654427</td><td>0</td><td><span class="stat-pend">pendente</span></td></tr>
+      <tr><td>41</td><td>Cleaning</td><td>Paper Towels</td><td>N-1170288</td><td>/b/paper-towels/N-1170288</td><td>0</td><td><span class="stat-pend">pendente</span></td></tr>
+      <tr><td>42</td><td>Cleaning</td><td>Personal Care</td><td>N-1181169</td><td>/b/personal-care/N-1181169</td><td>1</td><td><span class="stat-pend">pendente</span></td></tr>
+      <tr><td>43</td><td>Cleaning</td><td>Restroom Supplies</td><td>N-530684</td><td>/b/restroom-supplies/N-530684</td><td>3</td><td><span class="stat-pend">pendente</span></td></tr>
+      <tr><td>44</td><td>Cleaning</td><td>Safety &amp; Security</td><td>N-654510</td><td>/b/safety-and-security/N-654510</td><td>2</td><td><span class="stat-pend">pendente</span></td></tr>
+      <tr><td>45</td><td>Cleaning</td><td>Toilet Paper</td><td>N-1170289</td><td>/b/toilet-paper/N-1170289</td><td>0</td><td><span class="stat-pend">pendente</span></td></tr>
+      <tr><td>46</td><td>Cleaning</td><td>Tools &amp; Equipment</td><td>N-590326</td><td>/b/tools-and-equipment/N-590326</td><td>0</td><td><span class="stat-pend">pendente</span></td></tr>
+      <tr><td>47</td><td>Cleaning</td><td>Trash Cans &amp; Bags</td><td>N-1170290</td><td>/b/trash-cans-and-bags/N-1170290</td><td>2</td><td><span class="stat-pend">pendente</span></td></tr>
+      <!-- Electronics L2s (12) -->
+      <tr><td>48</td><td>Electronics</td><td>Audio</td><td>N-552805</td><td>/b/audio/N-552805</td><td>3</td><td><span class="stat-pend">pendente</span></td></tr>
+      <tr><td>49</td><td>Electronics</td><td>Batteries &amp; Power Protection</td><td>N-509475</td><td>/b/batteries-and-power-protection/N-509475</td><td>3</td><td><span class="stat-pend">pendente</span></td></tr>
+      <tr><td>50</td><td>Electronics</td><td>Cameras &amp; Camcorders</td><td>N-509515</td><td>/b/cameras-and-camcorders/N-509515</td><td>0</td><td><span class="stat-pend">pendente</span></td></tr>
+      <tr><td>51</td><td>Electronics</td><td>Car Electronics &amp; GPS</td><td>N-1462105</td><td>/b/car-electronics-and-gps/N-1462105</td><td>0</td><td><span class="stat-pend">pendente</span></td></tr>
+      <tr><td>52</td><td>Electronics</td><td>Drones &amp; Accessories</td><td>N-1462108</td><td>/b/drones-and-accessories/N-1462108</td><td>0</td><td><span class="stat-pend">pendente</span></td></tr>
+      <tr><td>53</td><td>Electronics</td><td>Networking &amp; Cables</td><td>N-509688</td><td>/b/networking-and-cables/N-509688</td><td>2</td><td><span class="stat-pend">pendente</span></td></tr>
+      <tr><td>54</td><td>Electronics</td><td>Office Equipment</td><td>N-509740</td><td>/b/office-equipment/N-509740</td><td>3</td><td><span class="stat-pend">pendente</span></td></tr>
+      <tr><td>55</td><td>Electronics</td><td>Phones &amp; Accessories</td><td>N-509793</td><td>/b/phones-and-accessories/N-509793</td><td>0</td><td><span class="stat-pend">pendente</span></td></tr>
+      <tr><td>56</td><td>Electronics</td><td>Smart Home</td><td>N-734014</td><td>/b/smart-home/N-734014</td><td>0</td><td><span class="stat-pend">pendente</span></td></tr>
+      <tr><td>57</td><td>Electronics</td><td>TVs &amp; Home Theater</td><td>N-509401</td><td>/b/tvs-and-home-theater/N-509401</td><td>3</td><td><span class="stat-pend">pendente</span></td></tr>
+      <tr><td>58</td><td>Electronics</td><td>Warranties &amp; Services</td><td>N-509880</td><td>/b/warranties-and-services/N-509880</td><td>0</td><td><span class="stat-pend">pendente</span></td></tr>
+      <tr><td>59</td><td>Electronics</td><td>Wearable Technology</td><td>N-573033</td><td>/b/wearable-technology/N-573033</td><td>0</td><td><span class="stat-pend">pendente</span></td></tr>
+      <!-- Furniture L2s (18) — abbreviated -->
+      <tr><td>60–77</td><td>Furniture</td><td>18 categorias (Bathroom, Bedroom, Bookcases, Carts, Chair Mats, Chairs, Cubicle, Desks, File Cabinets, Accessories, Collections, Lamps, Decor, Outdoor, Protection Plans, Storage Cabinets, Tables, Workspace Pods)</td><td>N-1576443…</td><td>/b/…/N-…</td><td>0–3</td><td><span class="stat-pend">pendente</span></td></tr>
+      <!-- School Supplies L2s (12) — abbreviated -->
+      <tr><td>78–89</td><td>School Supplies</td><td>12 categorias (Arts & Crafts, Backpacks, Basic School Supplies, Folders & Binders, Instructional Resources, Notebooks & Paper, Playground Equipment, School Electronics, School Furniture, Storage, Teacher Supplies, Writing)</td><td>N-1155033…</td><td>/b/…/N-…</td><td>0–4</td><td><span class="stat-pend">pendente</span></td></tr>
+      <!-- Computers L2s (12) — abbreviated -->
+      <tr><td>90–101</td><td>Computers &amp; Acc.</td><td>12 categorias (Computer Accessories, Cards & Components, Data Storage, Desktop, Gaming, Ink & Toner, Laptop, Monitors, Printers, Servers, Software, Tablets)</td><td>N-1461889…</td><td>/b/…/N-…</td><td>0–3</td><td><span class="stat-pend">pendente</span></td></tr>
+      <!-- Print & Copy L2s (15) — abbreviated -->
+      <tr><td>102–116</td><td>Print &amp; Copy</td><td>15 categorias (Badges, Business Cards, Cards & Invitations, Catalogs, Custom Business Forms, Custom Checks, Custom Stamps, Stationery, Document Printing, Labels, Large Format, Marketing, Photo, Presentation, Promotional)</td><td>N-1212247…</td><td>/b/…/N-…</td><td>0–6</td><td><span class="stat-pend">pendente</span></td></tr>
+      <!-- Hospitality L2s — abbreviated -->
+      <tr><td>117–129</td><td>Bedding</td><td>13 categorias (Bed Frames, Bed Skirts, Blankets, Comforters, Crib Bedding, Duvets, Fitted Sheet, Flat Sheet, Mattress Protectors, Mattresses, Pillow Cases, Pillow Protectors, Pillows)</td><td>N-1814576…</td><td>/b/…/N-…</td><td>0–2</td><td><span class="stat-pend">pendente</span></td></tr>
+      <tr><td>130–137</td><td>In Room Solutions</td><td>8 categorias (Appliances, Baby Accessories, Bathroom Accessories, Food Service Solutions, Ironing Supplies, Kitchen Accessories, Personal Care Amenities, Room Accessories)</td><td>N-1780200…</td><td>/b/…/N-…</td><td>1–14</td><td><span class="stat-pend">pendente</span></td></tr>
+      <tr><td>138–144</td><td>Towels &amp; Bath Mats</td><td>7 categorias (Bath Mats, Bath Towels, Gym Towel, Hand Towels, Kitchen Towels, Pool Towels, Wash Cloth)</td><td>N-1780711…</td><td>/b/…/N-…</td><td>0</td><td><span class="stat-pend">pendente</span></td></tr>
+      <tr><td>145–146</td><td>Equipment</td><td>2 categorias (Laundry, Public Spaces)</td><td>N-1788626, N-1782309</td><td>/b/…/N-…</td><td>1–3</td><td><span class="stat-pend">pendente</span></td></tr>
+      <tr><td>147–148</td><td>Food Service</td><td>2 categorias (Cups/Lids/Stir Sticks, Napkins)</td><td>N-1783638, N-1788678</td><td>/b/…/N-…</td><td>0</td><td><span class="stat-pend">pendente</span></td></tr>
+      <tr><td>149–154</td><td>Pet Supplies</td><td>6 categorias (Accessories, Cleaning, Feeding, Furniture, Health, Treats)</td><td>N-1785612…</td><td>/b/…/N-…</td><td>2–5</td><td><span class="stat-pend">pendente</span></td></tr>
+    </tbody>
+  </table>
+  </div>
+</div>
+
+<script>
+function switchTab(id) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + id).classList.add('active');
+  event.target.classList.add('active');
+}
+</script>
+
+</body>
+</html>
