@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -17,17 +18,6 @@
   --text:      #1a1916;
   --muted:     #7a7870;
   --faint:     #e8e5de;
-
-  --rfqa:  #4a7c22;
-  --prog:  #1d6bbf;
-  --blk:   #c73535;
-  --other: #c47d10;
-  --done:  #888780;
-
-  --vtex:  #1d6bbf;  --vtex-bg:  #e5f0fb;
-  --kibo:  #b06010;  --kibo-bg:  #faeeda;
-  --unass: #6b6b68;  --unass-bg: #eeece6;
-  --oth:   #8050b0;  --oth-bg:   #f0ecfe;
 }
 
 body {
@@ -38,12 +28,10 @@ body {
   min-height: 100vh;
 }
 
-/* ── Header ─────────────────────────────── */
 .header { margin-bottom: 2rem; }
 .header h1 { font-size: 15px; font-weight: 500; letter-spacing: .02em; color: var(--text); }
 .header .sub { font-size: 12px; color: var(--muted); margin-top: 3px; font-family: 'IBM Plex Mono', monospace; }
 
-/* ── Tabs ────────────────────────────────── */
 .phase-tabs {
   display: flex;
   border-bottom: 1px solid var(--border);
@@ -65,14 +53,12 @@ body {
 .ptab:hover { color: var(--text); }
 .ptab.active { color: var(--text); border-bottom-color: var(--text); font-weight: 500; }
 
-/* ── Panel ───────────────────────────────── */
 .panel { display: none; }
 .panel.active { display: block; }
 
-/* ── Metric strip ────────────────────────── */
 .metrics {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 8px;
   margin-bottom: 1.75rem;
 }
@@ -112,14 +98,6 @@ body {
   font-family: 'IBM Plex Mono', monospace;
 }
 
-/* ── Chart area ──────────────────────────── */
-.chart-row {
-  display: flex;
-  gap: 2.5rem;
-  align-items: center;
-  flex-wrap: wrap;
-  margin-bottom: 1.75rem;
-}
 .legend { flex: 1; min-width: 180px; }
 .legend-item {
   display: flex;
@@ -145,7 +123,6 @@ body {
   font-family: 'IBM Plex Mono', monospace;
 }
 
-/* ── Divider ─────────────────────────────── */
 .divider { border: none; border-top: 1px solid var(--border); margin: 1.75rem 0; }
 .section-label {
   font-size: 11px;
@@ -156,7 +133,6 @@ body {
   margin-bottom: 1rem;
 }
 
-/* ── Team cards ──────────────────────────── */
 .team-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -209,7 +185,6 @@ body {
   font-family: 'IBM Plex Mono', monospace;
 }
 
-/* ── Chart pair ──────────────────────────── */
 .charts-pair {
   display: flex;
   gap: 3rem;
@@ -241,7 +216,7 @@ body {
 
 <div class="header">
   <h1>Jira Dashboard — VTEX Team Backlog</h1>
-  <div class="sub">Source: JIRA export · Updated on 08/Apr/2026</div>
+  <div class="sub">Source: JIRA export · Updated on 11/Apr/2026</div>
 </div>
 
 <div class="phase-tabs" id="tabs"></div>
@@ -249,11 +224,12 @@ body {
 
 <script>
 const GROUPS = [
-  { key: 'Ready for QA', color: '#4a7c22', accentLine: '#4a7c22' },
-  { key: 'Backlog',      color: '#1d6bbf', accentLine: '#1d6bbf' },
-  { key: 'Blocked',      color: '#c73535', accentLine: '#c73535' },
-  { key: 'Out of Scope', color: '#9b59b6', accentLine: '#9b59b6' },
-  { key: 'Done',         color: '#888780', accentLine: '#888780' },
+  { key: 'Ready for QA', color: '#4a7c22' },
+  { key: 'In Progress',  color: '#1d6bbf' },
+  { key: 'Blocked',      color: '#c73535' },
+  { key: 'Other',        color: '#c47d10' },
+  { key: 'Done',         color: '#888780' },
+  { key: 'Out of Scope', color: '#8050b0' },
 ];
 
 const TEAM_STYLE = {
@@ -266,52 +242,51 @@ const TEAM_STYLE = {
   Unassigned:{ color: '#6b6b68', bg: '#eeece6' },
 };
 
-// ── Real data from CSV · Epics excluded · Out_Of_Vtex_Scope label → Out of Scope ─
-// Format per team: [ReadyForQA, Backlog, Blocked, OutOfScope, Done]
+// Format per team: [ReadyForQA, InProgress, Blocked, Other, Done, OutOfScope]
+// Customer Service Track → EXCLUSIVELY Customer Service App (no other phases)
+// All other tickets: counted in every phase matching their fix versions
 const DATA = [
   { name: 'Public Marketplace', teams: {
-    VTEX:       [  0,   1,  0,   0,  32],
-    ODP:        [  1,   4,  0,   0,  84],
-    Ollie:      [  0,   0,  0,   0,  13],
-    Kibo:       [  0,   1,  0,   0,   1],
-    Unassigned: [  0,   1,  0,   0,   1],
+    VTEX:       [  1,   1,  0,   0,   2,   1],
+    ODP:        [  0,   8,  0,   0,   1,   0],
+    Kibo:       [  0,   1,  0,   0,   0,   0],
+    Unassigned: [  0,   0,  0,   0,   7,   0],
   }},
   { name: 'Private Marketplace', teams: {
-    VTEX:       [  9,   8,  0,   0,  88],
-    ODP:        [ 14,   7,  0,   0,  44],
-    Ollie:      [  0,   1,  0,   0,   6],
-    Kibo:       [  0,   0,  1,   0,   0],
-    Trika:      [  2,   0,  0,   0,   0],
-    Unassigned: [  8,   2,  0,  16,   3],
+    VTEX:       [  8,   9,  0,   8,  60,   0],
+    ODP:        [  5,   6,  0,   4,  15,   0],
+    Trika:      [  1,   0,  0,   1,   0,   0],
+    Kibo:       [  0,   0,  1,   0,   0,   0],
+    Unassigned: [  0,   3,  0,   4,   2,  15],
   }},
   { name: 'Hosted Catalog', teams: {
-    VTEX:       [ 21,  44,  0,   0,  17],
-    ODP:        [ 17,  32,  5,   0,   8],
-    Brightdome: [  1,  14,  3,   0,   1],
-    Ollie:      [  7,  50,  3,   0,   3],
-    Kibo:       [  0,   4,  0,   0,   0],
-    Unassigned: [  0,  53,  0,   0,   3],
+    VTEX:       [ 12,  28,  0,  10,  12,   0],
+    ODP:        [  4,  17,  3,   5,   2,   0],
+    Brightdome: [  0,  10,  3,   1,   1,   0],
+    Kibo:       [  0,   1,  0,   0,   0,   0],
+    Ollie:      [  0,   0,  0,   0,   1,   0],
+    Unassigned: [  0,  26,  0,   0,   1,   0],
   }},
   { name: 'Punchout', teams: {
-    VTEX:       [ 32,  48,  7,   2,  55],
-    ODP:        [  7,  24,  5,   0,  14],
-    Brightdome: [ 85,  52, 16,   1, 149],
-    Ollie:      [ 11,  22,  0,   0,   2],
-    Unassigned: [  0,  25,  3,  27,   5],
+    Brightdome: [ 89, 117, 13,   3, 153,   2],
+    VTEX:       [ 29,  51,  7,   4,  52,   0],
+    ODP:        [  3,  24,  5,   5,  14,   0],
+    Ollie:      [ 10,   2,  0,   0,   1,   0],
+    Unassigned: [  2,   6,  3,   0,   4,  30],
   }},
   { name: 'B2B Website', teams: {
-    VTEX:       [ 58,  86, 17,   3,  33],
-    ODP:        [  4,  19, 12,   0,   6],
-    Brightdome: [109,  89, 27,  10,  57],
-    Ollie:      [  7,  53,  0,   0,   1],
-    Unassigned: [ 18,  97, 31,  66,   7],
+    Brightdome: [106, 108, 20,   0,  60,   3],
+    VTEX:       [ 35,  60, 11,  16,  29,   0],
+    Unassigned: [ 13,  79,  7,   0,   5,  68],
+    ODP:        [  3,   9,  9,   1,   7,   0],
+    Ollie:      [  6,   3,  0,   0,   1,   0],
   }},
   { name: 'Customer Service App', teams: {
-    VTEX:       [  5,  63,  0,   0,  62],
-    ODP:        [ 15,  80,  4,   0, 129],
-    Ollie:      [  7, 125,  3,   0,  31],
-    Kibo:       [  0,   4,  0,   0,   0],
-    Unassigned: [  4,  83,  0,   4,  11],
+    ODP:        [ 45, 106,  4,  12,  89,   0],
+    Ollie:      [  9, 122,  3,   7,  30,   0],
+    Unassigned: [  0,  91,  0,   4,  11,   4],
+    VTEX:       [ 10,  62,  0,   4,  54,   0],
+    Kibo:       [  0,   4,  0,   0,   0,   0],
   }},
 ];
 
@@ -319,14 +294,12 @@ const tabsEl   = document.getElementById('tabs');
 const panelsEl = document.getElementById('panels');
 
 DATA.forEach((phase, i) => {
-  // Aggregate totals per group
   const totals = GROUPS.map(() => 0);
   Object.values(phase.teams).forEach(arr => {
     arr.forEach((n, j) => totals[j] += n);
   });
   const grand = totals.reduce((a, b) => a + b, 0);
 
-  // Tab
   const tab = document.createElement('div');
   tab.className = 'ptab' + (i === 0 ? ' active' : '');
   tab.textContent = phase.name;
@@ -338,12 +311,10 @@ DATA.forEach((phase, i) => {
   };
   tabsEl.appendChild(tab);
 
-  // Panel
   const panel = document.createElement('div');
   panel.className = 'panel' + (i === 0 ? ' active' : '');
   panel.id = 'panel-' + i;
 
-  // Metrics
   const metricsHtml = GROUPS.map((g, j) => {
     const n = totals[j];
     return `<div class="metric" style="--accent-line:${g.color};">
@@ -357,7 +328,6 @@ DATA.forEach((phase, i) => {
     <div class="mpct">issues</div>
   </div>`;
 
-  // Legend
   const legendHtml = GROUPS.map((g, j) => {
     const n = totals[j];
     return `<div class="legend-item">
@@ -368,7 +338,6 @@ DATA.forEach((phase, i) => {
     </div>`;
   }).join('');
 
-  // Team cards
   const teamCardsHtml = Object.entries(phase.teams).map(([team, arr]) => {
     const teamTotal = arr.reduce((a, b) => a + b, 0);
     if (!teamTotal) return '';
@@ -389,7 +358,6 @@ DATA.forEach((phase, i) => {
     </div>`;
   }).join('');
 
-  // In Progress by team (index 1 in each team array)
   const IP_IDX = 1;
   const ipByTeam = Object.entries(phase.teams).map(([team, arr]) => ({ team, n: arr[IP_IDX] || 0 })).filter(t => t.n > 0);
   const ipTotal  = ipByTeam.reduce((a, t) => a + t.n, 0);
@@ -418,7 +386,7 @@ DATA.forEach((phase, i) => {
       </div>
       <div class="chart-block">
         <div>
-          <div class="chart-title">Backlog · By Team</div>
+          <div class="chart-title">In Progress · By Team</div>
           <div style="position:relative;width:190px;height:190px;">
             <canvas id="pie-ip-${i}"></canvas>
           </div>
