@@ -210,13 +210,21 @@ body {
   color: var(--muted);
   margin-bottom: 10px;
 }
+.chart-subtitle {
+  font-size: 10px;
+  color: var(--muted);
+  font-family: 'IBM Plex Mono', monospace;
+  margin-top: -6px;
+  margin-bottom: 10px;
+  opacity: .75;
+}
 </style>
 </head>
 <body>
 
 <div class="header">
   <h1>Jira Dashboard — VTEX Team Backlog</h1>
-  <div class="sub">Source: JIRA export · Updated on 11/Apr/2026</div>
+  <div class="sub">Source: JIRA export · Updated on 20/Apr/2026 · Epics excluded</div>
 </div>
 
 <div class="phase-tabs" id="tabs"></div>
@@ -247,45 +255,53 @@ const TEAM_STYLE = {
 // All other tickets: counted in every phase matching their fix versions
 const DATA = [
   { name: 'Public Marketplace', teams: {
-    VTEX:       [  1,   1,  0,   0,   2,   1],
-    ODP:        [  0,   8,  0,   0,   1,   0],
+    ODP:        [  0,   2,  0,   0,   1,   0],
+    VTEX:       [  1,   0,  0,   0,   2,   0],
     Kibo:       [  0,   1,  0,   0,   0,   0],
-    Unassigned: [  0,   0,  0,   0,   7,   0],
   }},
   { name: 'Private Marketplace', teams: {
-    VTEX:       [  8,   9,  0,   8,  60,   0],
-    ODP:        [  5,   6,  0,   4,  15,   0],
-    Trika:      [  1,   0,  0,   1,   0,   0],
+    VTEX:       [ 16,   7,  0,   0,  58,   0],
+    ODP:        [  8,   2,  0,   0,  15,   0],
+    Unassigned: [  4,   0,  0,   0,   1,  12],
+    Trika:      [  2,   0,  0,   0,   0,   0],
     Kibo:       [  0,   0,  1,   0,   0,   0],
-    Unassigned: [  0,   3,  0,   4,   2,  15],
   }},
   { name: 'Hosted Catalog', teams: {
-    VTEX:       [ 12,  28,  0,  10,  12,   0],
-    ODP:        [  4,  17,  3,   5,   2,   0],
-    Brightdome: [  0,  10,  3,   1,   1,   0],
+    VTEX:       [ 35,  18,  0,   0,  17,   0],
+    ODP:        [  9,   6,  3,   0,   2,   0],
+    Unassigned: [  0,  17,  0,   0,   1,   0],
+    Brightdome: [  2,   5,  3,   0,   1,   0],
     Kibo:       [  0,   1,  0,   0,   0,   0],
     Ollie:      [  0,   0,  0,   0,   1,   0],
-    Unassigned: [  0,  26,  0,   0,   1,   0],
   }},
   { name: 'Punchout', teams: {
-    Brightdome: [ 89, 117, 13,   3, 153,   2],
-    VTEX:       [ 29,  51,  7,   4,  52,   0],
-    ODP:        [  3,  24,  5,   5,  14,   0],
+    Brightdome: [117,  67, 16,   0, 173,   2],
+    VTEX:       [ 11,  27,  4,   0,  33,   0],
+    Unassigned: [  1,   1,  3,   0,   4,  30],
+    ODP:        [  8,   9,  5,   0,  14,   0],
     Ollie:      [ 10,   2,  0,   0,   1,   0],
-    Unassigned: [  2,   6,  3,   0,   4,  30],
+  },
+  currentSprint: {
+    label: 'Sprint 6 + VTEX Team Sprint 6',
+    inProgressByTeam: [
+      { team: 'Brightdome', n: 57 },
+      { team: 'VTEX',       n: 19 },
+      { team: 'ODP',        n:  5 },
+      { team: 'Ollie',      n:  2 },
+    ],
   }},
   { name: 'B2B Website', teams: {
-    Brightdome: [106, 108, 20,   0,  60,   3],
-    VTEX:       [ 35,  60, 11,  16,  29,   0],
-    Unassigned: [ 13,  79,  7,   0,   5,  68],
-    ODP:        [  3,   9,  9,   1,   7,   0],
+    Brightdome: [131,  78, 22,   0,  72,   3],
+    Unassigned: [ 12,  38,  7,   0,   5,  68],
+    VTEX:       [ 26,  40,  9,   0,  22,   0],
+    ODP:        [  4,   4,  9,   0,   7,   0],
     Ollie:      [  6,   3,  0,   0,   1,   0],
   }},
   { name: 'Customer Service App', teams: {
-    ODP:        [ 45, 106,  4,  12,  89,   0],
-    Ollie:      [  9, 122,  3,   7,  30,   0],
-    Unassigned: [  0,  91,  0,   4,  11,   4],
-    VTEX:       [ 10,  62,  0,   4,  54,   0],
+    ODP:        [ 57,  80,  3,   0,  87,   0],
+    Ollie:      [ 16, 122,  3,   0,  28,   0],
+    VTEX:       [ 15,  60,  1,   0,  53,   0],
+    Unassigned: [  4,  81,  0,   0,  11,   6],
     Kibo:       [  0,   4,  0,   0,   0,   0],
   }},
 ];
@@ -372,6 +388,34 @@ DATA.forEach((phase, i) => {
     </div>`;
   }).join('');
 
+  let sprintChartHtml = '';
+  let sprintTotal = 0;
+  let sprintByTeam = [];
+  if (phase.currentSprint && phase.currentSprint.inProgressByTeam.length) {
+    sprintByTeam = phase.currentSprint.inProgressByTeam.filter(t => t.n > 0);
+    sprintTotal = sprintByTeam.reduce((a, t) => a + t.n, 0);
+    const sprintLegendHtml = sprintByTeam.map(({ team, n }) => {
+      const style = TEAM_STYLE[team] || { color: '#888', bg: '#eee' };
+      return `<div class="legend-item">
+        <span class="ldot" style="background:${style.color};"></span>
+        <span class="lname">${team}</span>
+        <span class="lcount">${n}</span>
+        <span class="lpct">${sprintTotal ? Math.round(n / sprintTotal * 100) : 0}%</span>
+      </div>`;
+    }).join('');
+    sprintChartHtml = `
+      <div class="chart-block">
+        <div>
+          <div class="chart-title">Current Sprint · In Progress · By Team</div>
+          <div class="chart-subtitle">${phase.currentSprint.label} · ${sprintTotal} tickets</div>
+          <div style="position:relative;width:190px;height:190px;">
+            <canvas id="pie-sp-${i}"></canvas>
+          </div>
+        </div>
+        <div class="legend">${sprintLegendHtml}</div>
+      </div>`;
+  }
+
   panel.innerHTML = `
     <div class="metrics">${metricsHtml}</div>
     <div class="charts-pair">
@@ -393,6 +437,7 @@ DATA.forEach((phase, i) => {
         </div>
         <div class="legend">${ipLegendHtml}</div>
       </div>
+      ${sprintChartHtml}
     </div>
     <hr class="divider">
     <div class="section-label">Breakdown by Team</div>
@@ -439,6 +484,28 @@ DATA.forEach((phase, i) => {
       }
     }
   });
+
+  if (phase.currentSprint && sprintByTeam.length) {
+    new Chart(document.getElementById('pie-sp-' + i), {
+      type: 'doughnut',
+      data: {
+        labels: sprintByTeam.map(t => t.team),
+        datasets: [{
+          data: sprintByTeam.map(t => t.n),
+          backgroundColor: sprintByTeam.map(t => (TEAM_STYLE[t.team] || { color: '#888' }).color),
+          borderWidth: 2,
+          borderColor: '#f4f3ef',
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false, cutout: '60%',
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: ctx => `  ${ctx.parsed} issues (${sprintTotal ? Math.round(ctx.parsed / sprintTotal * 100) : 0}%)` } }
+        }
+      }
+    });
+  }
 });
 </script>
 </body>
